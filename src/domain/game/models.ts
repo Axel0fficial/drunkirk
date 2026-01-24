@@ -5,28 +5,55 @@ export type NumberRange = {
   max: number;
 };
 
-export type Challenge = {
-  id: string;
-
-  // Template text
-  text: string; // e.g. "Take {n} sips"
-
-  difficulty: Difficulty;
-
-  // Optional quantity parameter
-  quantity?: NumberRange;
-};
-
 export type Player = {
   id: string;
   name: string;
+};
+
+export type ChallengeCategory =
+  | "sips"
+  | "social"
+  | "rule"
+  | "minigame"
+  | "wildcard";
+
+export type SimpleChallenge = {
+  kind: "simple";
+  id: string;
+  text: string;
+  difficulty: Difficulty;
+  quantity?: NumberRange;
+  categories: ChallengeCategory[];
+};
+
+export type TrackedChallenge = {
+  kind: "tracked";
+  id: string;
+  difficulty: Difficulty;
+  action: string;
+  rounds: NumberRange;
+  categories: ChallengeCategory[];
+};
+
+export type Challenge = SimpleChallenge | TrackedChallenge;
+
+export type ActiveTracked = {
+  id: string; // unique active instance id
+  challengeId: string;
+  targetPlayerId: string;
+
+  action: string;
+  remainingRounds: number;
+
+  startedRound: number; // round number when applied
+  difficulty: Difficulty;
 };
 
 export type GameSettings = {
   maxDifficulty: Difficulty;
 
   // Anti-repetition
-  globalNoRepeatLastN: number;   // e.g., 10
+  globalNoRepeatLastN: number; // e.g., 10
   perPlayerNoRepeatLastN: number; // e.g., 5
 
   // Cooldowns

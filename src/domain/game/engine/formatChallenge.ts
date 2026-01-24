@@ -1,4 +1,4 @@
-import { Challenge, Difficulty } from "../models";
+import { Difficulty, SimpleChallenge } from "../models";
 
 export type FormattedChallenge = {
   text: string;
@@ -11,7 +11,7 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function formatChallenge(challenge: Challenge): FormattedChallenge {
+export function formatChallenge(challenge: SimpleChallenge): FormattedChallenge {
   if (!challenge.quantity) {
     return {
       text: challenge.text,
@@ -29,4 +29,8 @@ export function formatChallenge(challenge: Challenge): FormattedChallenge {
     difficulty: challenge.difficulty,
     challengeId: challenge.id,
   };
+}
+
+export function randomIntInRange(min: number, max: number) {
+  return randomInt(min, max);
 }

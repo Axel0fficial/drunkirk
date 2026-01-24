@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { View, Text, TextInput, Pressable, FlatList } from "react-native";
 import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { useGame } from "../src/state/gameStore";
 
 export default function Settings() {
@@ -38,7 +38,12 @@ export default function Settings() {
             addPlayer(name);
             setName("");
           }}
-          style={{ paddingHorizontal: 16, justifyContent: "center", borderWidth: 1, borderRadius: 12 }}
+          style={{
+            paddingHorizontal: 16,
+            justifyContent: "center",
+            borderWidth: 1,
+            borderRadius: 12,
+          }}
         >
           <Text>Add</Text>
         </Pressable>
@@ -60,12 +65,26 @@ export default function Settings() {
             }}
           >
             <Text style={{ fontSize: 18 }}>{item.name}</Text>
-            <Pressable onPress={() => removePlayer(item.id)} style={{ padding: 8 }}>
+            <Pressable
+              onPress={() => removePlayer(item.id)}
+              style={{ padding: 8 }}
+            >
               <Text>Remove</Text>
             </Pressable>
           </View>
         )}
       />
+      <Pressable
+        onPress={() => router.push("/advanced-settings")}
+        style={{
+          padding: 14,
+          borderWidth: 1,
+          borderRadius: 12,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ fontSize: 16 }}>Advanced settings</Text>
+      </Pressable>
 
       <View style={{ flexDirection: "row", gap: 12 }}>
         <Pressable
@@ -88,7 +107,12 @@ export default function Settings() {
 
         <Pressable
           onPress={resetGame}
-          style={{ padding: 14, borderWidth: 1, borderRadius: 12, alignItems: "center" }}
+          style={{
+            padding: 14,
+            borderWidth: 1,
+            borderRadius: 12,
+            alignItems: "center",
+          }}
         >
           <Text>Reset</Text>
         </Pressable>

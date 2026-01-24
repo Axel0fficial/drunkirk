@@ -1,35 +1,55 @@
 import React, { createContext, useContext, useReducer } from "react";
-import type { Player } from "../domain/game/models";
 import { CHALLENGES } from "../domain/game/challenges";
+import {
+  formatChallenge,
+  randomIntInRange,
+} from "../domain/game/engine/formatChallenge";
+import { formatTrackedText } from "../domain/game/engine/formatTracked";
 import { randomPick } from "../domain/game/engine/randomPick";
-import { formatChallenge } from "../domain/game/engine/formatChallenge";
 import { scoreForChallenge } from "../domain/game/engine/scoring";
+import type {
+  ActiveTracked,
+  Challenge,
+  Player,
+  SimpleChallenge,
+  TrackedChallenge,
+} from "../domain/game/models";
 
 type TurnEntry = {
   round: number;
-  turnInRound: number; // 1..players.length
+  turnInRound: number;
   playerId: string;
 
   challengeId: string;
   challengeText: string;
-  n: number | null;
   difficulty: "easy" | "normal" | "hard" | "brutal";
+  categories: string[];
 
+  n: number | null;
   pointsAwarded: number;
   timestamp: number;
+  isSkip?: boolean;
 };
 
 type GameState = {
   players: Player[];
   currentPlayerIndex: number;
 
-  round: number;        // starts at 1
-  turnInRound: number;  // 1..players.length (or 0 before game starts)
+  round: number; // starts at 1
+  turnInRound: number; // 0 before first turn, then 1..players.length
 
   currentTurn: TurnEntry | null;
 
   scores: Record<string, number>;
   history: TurnEntry[];
+
+  activeTracked: ActiveTracked[];
+  advanced: AdvancedSettings;
+};
+
+type AdvancedSettings = {
+  enabledCategories: Record<string, boolean>;
+  favoriteChallenges: Record<string, boolean>;
 };
 
 type Action =
@@ -38,6 +58,8 @@ type Action =
   | { type: "START_GAME" }
   | { type: "NEXT_TURN" }
   | { type: "SKIP_TURN" }
+  | { type: "TOGGLE_CATEGORY"; category: string }
+  | { type: "TOGGLE_FAVORITE"; challengeId: string }
   | { type: "RESET_GAME" };
 
 function makeId() {
@@ -52,6 +74,17 @@ function ensureScore(scores: Record<string, number>, playerId: string) {
   if (scores[playerId] == null) scores[playerId] = 0;
 }
 
+function decrementTrackedOnRoundEnd(active: ActiveTracked[]): ActiveTracked[] {
+  return active
+    .map((a) => ({ ...a, remainingRounds: a.remainingRounds - 1 }))
+    .filter((a) => a.remainingRounds > 0);
+}
+
+function pickTargetPlayer(players: Player[], nextPlayerIndex: number): Player {
+  // v1: target is the next player (consistent + easy to understand)
+  return players[nextPlayerIndex];
+}
+
 function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case "ADD_PLAYER": {
@@ -59,19 +92,19 @@ function reducer(state: GameState, action: Action): GameState {
       if (!name) return state;
 
       const exists = state.players.some(
-        (p) => p.name.toLowerCase() === name.toLowerCase()
+        (p) => p.name.toLowerCase() === name.toLowerCase(),
       );
       if (exists) return state;
 
       const newPlayer: Player = { id: makeId(), name };
-      const nextScores = { ...state.scores };
-      nextScores[newPlayer.id] = 0;
+      const nextScores = { ...state.scores, [newPlayer.id]: 0 };
 
       return {
         ...state,
         players: [...state.players, newPlayer],
         scores: nextScores,
-        currentPlayerIndex: state.players.length === 0 ? 0 : state.currentPlayerIndex,
+        currentPlayerIndex:
+          state.players.length === 0 ? 0 : state.currentPlayerIndex,
       };
     }
 
@@ -81,20 +114,24 @@ function reducer(state: GameState, action: Action): GameState {
       delete nextScores[action.playerId];
 
       const nextIndex =
-        nextPlayers.length === 0 ? 0 : Math.min(state.currentPlayerIndex, nextPlayers.length - 1);
+        nextPlayers.length === 0
+          ? 0
+          : Math.min(state.currentPlayerIndex, nextPlayers.length - 1);
 
       return {
         ...state,
         players: nextPlayers,
         scores: nextScores,
         currentPlayerIndex: nextIndex,
+        activeTracked: state.activeTracked.filter(
+          (a) => a.targetPlayerId !== action.playerId,
+        ),
       };
     }
 
     case "START_GAME": {
       if (state.players.length === 0) return state;
 
-      // Reset counters, keep players
       return {
         ...state,
         currentPlayerIndex: 0,
@@ -103,6 +140,34 @@ function reducer(state: GameState, action: Action): GameState {
         currentTurn: null,
         history: [],
         scores: Object.fromEntries(state.players.map((p) => [p.id, 0])),
+        activeTracked: [],
+      };
+    }
+    case "TOGGLE_CATEGORY": {
+      const current = state.advanced.enabledCategories[action.category];
+      return {
+        ...state,
+        advanced: {
+          ...state.advanced,
+          enabledCategories: {
+            ...state.advanced.enabledCategories,
+            [action.category]: current === false ? true : false, // default true
+          },
+        },
+      };
+    }
+
+    case "TOGGLE_FAVORITE": {
+      const current = state.advanced.favoriteChallenges[action.challengeId];
+      return {
+        ...state,
+        advanced: {
+          ...state.advanced,
+          favoriteChallenges: {
+            ...state.advanced.favoriteChallenges,
+            [action.challengeId]: current ? false : true,
+          },
+        },
       };
     }
 
@@ -112,28 +177,70 @@ function reducer(state: GameState, action: Action): GameState {
       const player = state.players[state.currentPlayerIndex];
       if (!player) return state;
 
-      const picked = randomPick(CHALLENGES);
-      const formatted = formatChallenge(picked);
+      const picked = randomPick(CHALLENGES) as Challenge;
 
-      const points = scoreForChallenge(formatted.difficulty, formatted.n);
+      // advance counters for THIS turn
+      const nextTurnInRound = state.turnInRound + 1;
+      const finishedRound = nextTurnInRound >= state.players.length;
 
-      // Award points immediately (simple v1)
+      const nextRound = finishedRound ? state.round + 1 : state.round;
+      const storedTurnInRound = nextTurnInRound; // 1..players.length
+
+      // Round-end maintenance (tracked decrement)
+      const nextActiveTracked = finishedRound
+        ? decrementTrackedOnRoundEnd(state.activeTracked)
+        : state.activeTracked;
+
+      let challengeText = "";
+      let points = 0;
+      let n: number | null = null;
+
+      let activeTrackedAfterApply = nextActiveTracked;
+
+      if (picked.kind === "simple") {
+        const formatted = formatChallenge(picked as SimpleChallenge);
+        challengeText = formatted.text;
+        n = formatted.n;
+        points = scoreForChallenge(formatted.difficulty, formatted.n);
+      } else {
+        const tracked = picked as TrackedChallenge;
+        const rounds = randomIntInRange(tracked.rounds.min, tracked.rounds.max);
+
+        // target = current player for now (or change to next/any later)
+        const target = player;
+
+        challengeText = formatTrackedText(target.name, tracked.action, rounds);
+
+        // Create an active tracked instance
+        const active: ActiveTracked = {
+          id: makeId(),
+          challengeId: tracked.id,
+          targetPlayerId: target.id,
+          action: tracked.action,
+          remainingRounds: rounds,
+          startedRound: state.round,
+          difficulty: tracked.difficulty,
+        };
+
+        activeTrackedAfterApply = [...nextActiveTracked, active];
+
+        // v1 scoring for tracked: difficulty multiplier * rounds
+        points = scoreForChallenge(tracked.difficulty, rounds);
+      }
+
       const nextScores = { ...state.scores };
       ensureScore(nextScores, player.id);
       nextScores[player.id] += points;
 
-      // Advance turn counters
-      const nextTurnInRound = state.turnInRound + 1;
-      const finishedRound = nextTurnInRound >= state.players.length;
-
       const entry: TurnEntry = {
         round: state.round,
-        turnInRound: nextTurnInRound,
+        turnInRound: storedTurnInRound,
         playerId: player.id,
-        challengeId: formatted.challengeId,
-        challengeText: formatted.text,
-        n: formatted.n,
-        difficulty: formatted.difficulty,
+        challengeId: picked.id,
+        challengeText,
+        difficulty: picked.difficulty,
+        categories: picked.categories,
+        n,
         pointsAwarded: points,
         timestamp: Date.now(),
       };
@@ -144,59 +251,98 @@ function reducer(state: GameState, action: Action): GameState {
         history: [...state.history, entry],
         currentTurn: entry,
 
-        // Next player
-        currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
+        // advance player
+        currentPlayerIndex:
+          (state.currentPlayerIndex + 1) % state.players.length,
 
-        // Round/turn progression
+        // round/turn counters
         turnInRound: finishedRound ? 0 : nextTurnInRound,
-        round: finishedRound ? state.round + 1 : state.round,
+        round: nextRound,
+
+        // tracked
+        activeTracked: activeTrackedAfterApply,
       };
     }
 
     case "SKIP_TURN": {
-        if (state.players.length === 0) return state;
+      if (state.players.length === 0) return state;
 
-        // Advance turn counters
-        const nextTurnInRound = state.turnInRound + 1;
-        const finishedRound = nextTurnInRound >= state.players.length;
+      // advance to next player + update round counters
+      const nextTurnInRound = state.turnInRound + 1;
+      const finishedRound = nextTurnInRound >= state.players.length;
 
-        const nextRound = finishedRound ? state.round + 1 : state.round;
-        const nextTurnCounter = finishedRound ? 0 : nextTurnInRound;
+      const nextRound = finishedRound ? state.round + 1 : state.round;
+      const nextTurnCounter = finishedRound ? 0 : nextTurnInRound;
 
-        // Advance player
-        const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
-        const nextPlayer = state.players[nextPlayerIndex];
-        if (!nextPlayer) return state;
+      const nextPlayerIndex =
+        (state.currentPlayerIndex + 1) % state.players.length;
+      const nextPlayer = state.players[nextPlayerIndex];
+      if (!nextPlayer) return state;
 
-        // Pick a new challenge for the next player, but award 0 points
-        const picked = randomPick(CHALLENGES);
-        const formatted = formatChallenge(picked);
+      // Round-end maintenance (tracked decrement)
+      const nextActiveTracked = finishedRound
+        ? decrementTrackedOnRoundEnd(state.activeTracked)
+        : state.activeTracked;
 
-        const entry: TurnEntry = {
-            round: nextRound,
-            turnInRound: nextTurnCounter === 0 ? state.players.length : nextTurnCounter, // keep display consistent
-            playerId: nextPlayer.id,
+      // Reroll challenge for next player, award 0 points
+      const picked = randomPick(CHALLENGES) as Challenge;
 
-            challengeId: formatted.challengeId,
-            challengeText: formatted.text,
-            n: formatted.n,
-            difficulty: formatted.difficulty,
+      let challengeText = "";
+      let n: number | null = null;
 
-            pointsAwarded: 0,
-            timestamp: Date.now(),
+      let activeTrackedAfterApply = nextActiveTracked;
+
+      if (picked.kind === "simple") {
+        const formatted = formatChallenge(picked as SimpleChallenge);
+        challengeText = formatted.text;
+        n = formatted.n;
+      } else {
+        const tracked = picked as TrackedChallenge;
+        const rounds = randomIntInRange(tracked.rounds.min, tracked.rounds.max);
+
+        // target = the next player (since skip moved turn)
+        const target = pickTargetPlayer(state.players, nextPlayerIndex);
+
+        challengeText = formatTrackedText(target.name, tracked.action, rounds);
+
+        const active: ActiveTracked = {
+          id: makeId(),
+          challengeId: tracked.id,
+          targetPlayerId: target.id,
+          action: tracked.action,
+          remainingRounds: rounds,
+          startedRound: nextRound,
+          difficulty: tracked.difficulty,
         };
 
-        return {
-            ...state,
-            currentPlayerIndex: nextPlayerIndex,
-            round: nextRound,
-            turnInRound: nextTurnCounter,
-            currentTurn: entry,
-            history: [...state.history, entry], // logs skip as a 0-point turn
-        };
+        activeTrackedAfterApply = [...nextActiveTracked, active];
+      }
+
+      const entry: TurnEntry = {
+        round: nextRound,
+        turnInRound:
+          nextTurnCounter === 0 ? state.players.length : nextTurnCounter,
+        playerId: nextPlayer.id,
+        challengeId: picked.id,
+        challengeText,
+        difficulty: picked.difficulty,
+        categories: picked.categories,
+        n,
+        pointsAwarded: 0,
+        timestamp: Date.now(),
+        isSkip: true,
+      };
+
+      return {
+        ...state,
+        currentPlayerIndex: nextPlayerIndex,
+        round: nextRound,
+        turnInRound: nextTurnCounter,
+        currentTurn: entry,
+        history: [...state.history, entry],
+        activeTracked: activeTrackedAfterApply,
+      };
     }
-
-
 
     case "RESET_GAME":
       return {
@@ -207,6 +353,7 @@ function reducer(state: GameState, action: Action): GameState {
         currentTurn: null,
         history: [],
         scores: Object.fromEntries(state.players.map((p) => [p.id, 0])),
+        activeTracked: [],
       };
 
     default:
@@ -221,6 +368,8 @@ const GameContext = createContext<{
   startGame: () => void;
   nextTurn: () => void;
   skipTurn: () => void;
+  toggleCategory: (category: string) => void;
+  toggleFavorite: (challengeId: string) => void;
   resetGame: () => void;
 } | null>(null);
 
@@ -233,6 +382,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     currentTurn: null,
     scores: {},
     history: [],
+    activeTracked: [],
+    advanced: {
+      enabledCategories: {},
+      favoriteChallenges: {},
+    },
   });
 
   return (
@@ -240,10 +394,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       value={{
         state,
         addPlayer: (name) => dispatch({ type: "ADD_PLAYER", name }),
-        removePlayer: (playerId) => dispatch({ type: "REMOVE_PLAYER", playerId }),
+        removePlayer: (playerId) =>
+          dispatch({ type: "REMOVE_PLAYER", playerId }),
         startGame: () => dispatch({ type: "START_GAME" }),
         nextTurn: () => dispatch({ type: "NEXT_TURN" }),
         skipTurn: () => dispatch({ type: "SKIP_TURN" }),
+        toggleCategory: (category) =>
+          dispatch({ type: "TOGGLE_CATEGORY", category }),
+        toggleFavorite: (challengeId) =>
+          dispatch({ type: "TOGGLE_FAVORITE", challengeId }),
         resetGame: () => dispatch({ type: "RESET_GAME" }),
       }}
     >

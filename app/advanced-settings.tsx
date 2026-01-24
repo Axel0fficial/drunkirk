@@ -1,0 +1,172 @@
+import { router } from "expo-router";
+import { useMemo } from "react";
+import { Pressable, SectionList, Text, View } from "react-native";
+import { CHALLENGES } from "../src/domain/game/challenges";
+import { useGame } from "../src/state/gameStore";
+
+type SectionItem = {
+  id: string;
+  title: string;
+};
+
+type Section = {
+  title: string; // category
+  data: SectionItem[];
+};
+
+function challengeTitle(ch: any) {
+  // Simple: show text/action depending on kind
+  if (ch.kind === "tracked") {
+    return `Tracked: ${ch.action}`;
+  }
+  return ch.text;
+}
+
+export default function AdvancedSettings() {
+  const { state, toggleCategory, toggleFavorite } = useGame();
+
+  const sections: Section[] = useMemo(() => {
+    // Map category -> challenges
+    const map = new Map<string, SectionItem[]>();
+
+    for (const ch of CHALLENGES as any[]) {
+      const cats: string[] = ch.categories ?? ["uncategorized"];
+      for (const cat of cats) {
+        if (!map.has(cat)) map.set(cat, []);
+        map.get(cat)!.push({
+          id: ch.id,
+          title: challengeTitle(ch),
+        });
+      }
+    }
+
+    // Sort categories, sort challenges within category
+    const sortedCats = Array.from(map.keys()).sort((a, b) =>
+      a.localeCompare(b),
+    );
+    return sortedCats.map((cat) => ({
+      title: cat,
+      data: (map.get(cat) ?? []).sort((a, b) => a.title.localeCompare(b.title)),
+    }));
+  }, []);
+
+  const isCategoryEnabled = (category: string) => {
+    const v = state.advanced.enabledCategories[category];
+    return v !== false; // default enabled
+  };
+
+  const isFavorite = (challengeId: string) => {
+    return !!state.advanced.favoriteChallenges[challengeId];
+  };
+
+  return (
+    <View style={{ flex: 1, padding: 24 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ fontSize: 26, fontWeight: "700" }}>
+          Advanced settings
+        </Text>
+
+        <Pressable onPress={() => router.back()} style={{ padding: 10 }}>
+          <Text>Back</Text>
+        </Pressable>
+      </View>
+
+      <Text style={{ marginTop: 8, opacity: 0.8 }}>
+        Disable categories and mark favorite challenges.
+      </Text>
+
+      <View style={{ height: 16 }} />
+
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        stickySectionHeadersEnabled={false}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        SectionSeparatorComponent={() => <View style={{ height: 14 }} />}
+        renderSectionHeader={({ section }) => {
+          const enabled = isCategoryEnabled(section.title);
+
+          return (
+            <View
+              style={{
+                borderWidth: 1,
+                borderRadius: 12,
+                padding: 12,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: "600" }}>
+                  {section.title}
+                </Text>
+                <Text style={{ opacity: 0.7 }}>
+                  {enabled ? "Enabled" : "Disabled"} • {section.data.length}{" "}
+                  challenges
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => toggleCategory(section.title)}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 14,
+                  borderWidth: 1,
+                  borderRadius: 10,
+                  opacity: enabled ? 1 : 0.7,
+                }}
+              >
+                <Text>{enabled ? "Disable" : "Enable"}</Text>
+              </Pressable>
+            </View>
+          );
+        }}
+        renderItem={({ item, section }) => {
+          const enabled = isCategoryEnabled(section.title);
+          const fav = isFavorite(item.id);
+
+          return (
+            <View
+              style={{
+                borderWidth: 1,
+                borderRadius: 12,
+                padding: 12,
+                opacity: enabled ? 1 : 0.45,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Text style={{ flex: 1 }}>{item.title}</Text>
+
+                <Pressable
+                  onPress={() => toggleFavorite(item.id)}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderWidth: 1,
+                    borderRadius: 10,
+                  }}
+                >
+                  <Text>{fav ? "★ Favorite" : "☆ Favorite"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        }}
+      />
+    </View>
+  );
+}
