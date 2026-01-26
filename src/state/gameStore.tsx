@@ -45,6 +45,7 @@ type GameState = {
 
   activeTracked: ActiveTracked[];
   advanced: AdvancedSettings;
+  totalRounds: number;
 };
 
 type AdvancedSettings = {
@@ -60,6 +61,7 @@ type Action =
   | { type: "SKIP_TURN" }
   | { type: "TOGGLE_CATEGORY"; category: string }
   | { type: "TOGGLE_FAVORITE"; challengeId: string }
+  | { type: "SET_TOTAL_ROUNDS"; totalRounds: number }
   | { type: "RESET_GAME" };
 
 function makeId() {
@@ -83,6 +85,9 @@ function decrementTrackedOnRoundEnd(active: ActiveTracked[]): ActiveTracked[] {
 function pickTargetPlayer(players: Player[], nextPlayerIndex: number): Player {
   // v1: target is the next player (consistent + easy to understand)
   return players[nextPlayerIndex];
+}
+function isGameOver(state: GameState) {
+  return state.turnInRound === 0 && state.round > state.totalRounds;
 }
 
 function reducer(state: GameState, action: Action): GameState {
@@ -171,7 +176,14 @@ function reducer(state: GameState, action: Action): GameState {
       };
     }
 
+    case "SET_TOTAL_ROUNDS": {
+      const r = Math.max(1, Math.floor(action.totalRounds || 0));
+      return { ...state, totalRounds: r };
+    }
+
     case "NEXT_TURN": {
+      if (isGameOver(state)) return state;
+
       if (state.players.length === 0) return state;
 
       const player = state.players[state.currentPlayerIndex];
@@ -265,6 +277,8 @@ function reducer(state: GameState, action: Action): GameState {
     }
 
     case "SKIP_TURN": {
+      if (isGameOver(state)) return state;
+
       if (state.players.length === 0) return state;
 
       // advance to next player + update round counters
@@ -370,6 +384,7 @@ const GameContext = createContext<{
   skipTurn: () => void;
   toggleCategory: (category: string) => void;
   toggleFavorite: (challengeId: string) => void;
+  setTotalRounds: (rounds: number) => void;
   resetGame: () => void;
 } | null>(null);
 
@@ -383,6 +398,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     scores: {},
     history: [],
     activeTracked: [],
+    totalRounds: 6,
     advanced: {
       enabledCategories: {},
       favoriteChallenges: {},
@@ -404,6 +420,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         toggleFavorite: (challengeId) =>
           dispatch({ type: "TOGGLE_FAVORITE", challengeId }),
         resetGame: () => dispatch({ type: "RESET_GAME" }),
+        setTotalRounds: (rounds) =>
+          dispatch({ type: "SET_TOTAL_ROUNDS", totalRounds: rounds }),
       }}
     >
       {children}

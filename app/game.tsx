@@ -5,6 +5,8 @@ import { useGame } from "../src/state/gameStore";
 export default function Game() {
   const { state, nextTurn, skipTurn } = useGame();
 
+  const gameOver = state.turnInRound === 0 && state.round > state.totalRounds;
+
   // Guard: game not ready
   if (state.players.length < 2) {
     return (
@@ -48,15 +50,29 @@ export default function Game() {
 
   return (
     <View style={{ flex: 1, padding: 24 }}>
+      {gameOver && (
+        <View
+          style={{
+            borderWidth: 1,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 16,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 22, fontWeight: "700" }}>Game Over</Text>
+          <Text style={{ opacity: 0.8, marginTop: 6 }}>
+            {state.totalRounds} rounds completed
+          </Text>
+        </View>
+      )}
       {/* Header: round & turn */}
       <View style={{ marginBottom: 16 }}>
         <Text style={{ opacity: 0.8 }}>Round {state.round}</Text>
         <Text style={{ opacity: 0.8 }}>
           Turn{" "}
-          {state.turnInRound === 0
-            ? state.players.length
-            : state.turnInRound}{" "}
-          / {state.players.length}
+          {state.turnInRound === 0 ? state.players.length : state.turnInRound} /{" "}
+          {state.players.length}
         </Text>
       </View>
 
@@ -100,6 +116,7 @@ export default function Game() {
       <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
         <Pressable
           onPress={nextTurn}
+          disabled={gameOver}
           style={{
             flex: 1,
             paddingVertical: 14,
@@ -113,6 +130,7 @@ export default function Game() {
 
         <Pressable
           onPress={skipTurn}
+          disabled={gameOver}
           style={{
             flex: 1,
             paddingVertical: 14,
@@ -136,13 +154,11 @@ export default function Game() {
           <Text style={{ opacity: 0.7, marginTop: 6 }}>None</Text>
         ) : (
           state.activeTracked.map((t) => {
-            const target = state.players.find(
-              (p) => p.id === t.targetPlayerId
-            );
+            const target = state.players.find((p) => p.id === t.targetPlayerId);
             return (
               <Text key={t.id} style={{ marginTop: 4 }}>
-                • {target?.name ?? "Unknown"}: {t.action} (
-                {t.remainingRounds} rounds left)
+                • {target?.name ?? "Unknown"}: {t.action} ({t.remainingRounds}{" "}
+                rounds left)
               </Text>
             );
           })
