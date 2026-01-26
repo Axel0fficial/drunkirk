@@ -1,11 +1,10 @@
 import { router } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { FlatList, Modal, Pressable, Text, View } from "react-native";
 import { useGame } from "../src/state/gameStore";
 
 export default function Game() {
   const { state, nextTurn, skipTurn } = useGame();
-
-  const gameOver = state.turnInRound === 0 && state.round > state.totalRounds;
 
   // Guard: game not ready
   if (state.players.length < 2) {
@@ -38,6 +37,18 @@ export default function Game() {
     );
   }
 
+
+  const [showGameOver, setShowGameOver] = useState(false);
+
+  const gameOver = state.turnInRound === 0 && state.round > state.totalRounds;
+
+  // Open modal when game ends
+  useEffect(() => {
+    if (gameOver) {
+      setShowGameOver(true);
+    }
+  }, [gameOver]);
+
   const currentPlayer = state.players[state.currentPlayerIndex];
 
   const scoreRows = state.players
@@ -48,24 +59,80 @@ export default function Game() {
     }))
     .sort((a, b) => b.score - a.score);
 
+  const topScore = scoreRows[0]?.score ?? 0;
+  const winners = scoreRows.filter((r) => r.score === topScore);
+  const winnerText =
+    winners.length === 1
+      ? winners[0].name
+      : `Tie: ${winners.map((w) => w.name).join(", ")}`;
+
   return (
     <View style={{ flex: 1, padding: 24 }}>
-      {gameOver && (
+      {/* GAME OVER MODAL */}
+      <Modal visible={showGameOver} transparent animationType="fade">
+
         <View
           style={{
-            borderWidth: 1,
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 16,
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
             alignItems: "center",
+            padding: 24,
           }}
         >
-          <Text style={{ fontSize: 22, fontWeight: "700" }}>Game Over</Text>
-          <Text style={{ opacity: 0.8, marginTop: 6 }}>
-            {state.totalRounds} rounds completed
-          </Text>
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              borderRadius: 18,
+              borderWidth: 1,
+              backgroundColor: "white",
+              padding: 18,
+              gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: 26, fontWeight: "800", textAlign: "center" }}>
+              Game Over
+            </Text>
+
+            <Text style={{ fontSize: 16, opacity: 0.8, textAlign: "center" }}>
+              {state.totalRounds} rounds completed
+            </Text>
+
+            <View style={{ height: 8 }} />
+
+            <Text style={{ fontSize: 16, opacity: 0.8, textAlign: "center" }}>
+              Winner
+            </Text>
+            <Text style={{ fontSize: 22, fontWeight: "700", textAlign: "center" }}>
+              {winnerText}
+            </Text>
+
+            <Text style={{ fontSize: 16, opacity: 0.8, textAlign: "center" }}>
+              Score: {topScore}
+            </Text>
+
+            <View style={{ height: 10 }} />
+
+            <Pressable
+              onPress={() => {
+                setShowGameOver(false);
+                router.push("/setting");
+              }}
+              style={{
+                paddingVertical: 14,
+                borderWidth: 1,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontSize: 18 }}>Return to Settings</Text>
+            </Pressable>
+
+          </View>
         </View>
-      )}
+      </Modal>
+
       {/* Header: round & turn */}
       <View style={{ marginBottom: 16 }}>
         <Text style={{ opacity: 0.8 }}>Round {state.round}</Text>
@@ -79,9 +146,7 @@ export default function Game() {
       {/* Current player */}
       <View style={{ marginBottom: 16 }}>
         <Text style={{ fontSize: 16, opacity: 0.7 }}>Current player</Text>
-        <Text style={{ fontSize: 30, fontWeight: "700" }}>
-          {currentPlayer.name}
-        </Text>
+        <Text style={{ fontSize: 30, fontWeight: "700" }}>{currentPlayer.name}</Text>
       </View>
 
       {/* Current challenge */}
@@ -98,18 +163,18 @@ export default function Game() {
         </Text>
 
         {state.currentTurn && (
-          <Text
-            style={{
-              textAlign: "center",
-              marginTop: 8,
-              opacity: 0.8,
-            }}
-          >
+          <Text style={{ textAlign: "center", marginTop: 8, opacity: 0.8 }}>
             {state.currentTurn.pointsAwarded > 0
               ? `+${state.currentTurn.pointsAwarded} points`
               : "0 points"}
           </Text>
         )}
+
+        {state.currentTurn?.categories?.length ? (
+          <Text style={{ textAlign: "center", marginTop: 8, opacity: 0.7 }}>
+            {state.currentTurn.categories.join(" • ")}
+          </Text>
+        ) : null}
       </View>
 
       {/* Action buttons */}
@@ -123,6 +188,7 @@ export default function Game() {
             borderWidth: 1,
             borderRadius: 12,
             alignItems: "center",
+            opacity: gameOver ? 0.4 : 1,
           }}
         >
           <Text style={{ fontSize: 18 }}>Next</Text>
@@ -137,7 +203,7 @@ export default function Game() {
             borderWidth: 1,
             borderRadius: 12,
             alignItems: "center",
-            opacity: 0.8,
+            opacity: gameOver ? 0.4 : 0.8,
           }}
         >
           <Text style={{ fontSize: 18 }}>Skip</Text>
@@ -157,8 +223,7 @@ export default function Game() {
             const target = state.players.find((p) => p.id === t.targetPlayerId);
             return (
               <Text key={t.id} style={{ marginTop: 4 }}>
-                • {target?.name ?? "Unknown"}: {t.action} ({t.remainingRounds}{" "}
-                rounds left)
+                • {target?.name ?? "Unknown"}: {t.action} ({t.remainingRounds} rounds left)
               </Text>
             );
           })
@@ -195,10 +260,7 @@ export default function Game() {
       </View>
 
       {/* Footer */}
-      <Pressable
-        onPress={() => router.push("/setting")}
-        style={{ padding: 12, alignItems: "center" }}
-      >
+      <Pressable onPress={() => router.push("/setting")} style={{ padding: 12, alignItems: "center" }}>
         <Text>Settings</Text>
       </Pressable>
     </View>
