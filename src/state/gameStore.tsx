@@ -5,7 +5,7 @@ import {
   randomIntInRange,
 } from "../domain/game/engine/formatChallenge";
 import { formatTrackedText } from "../domain/game/engine/formatTracked";
-import { randomPick } from "../domain/game/engine/randomPick";
+import { pickChallengeWeighted } from "../domain/game/engine/pickChallengesWeighted";
 import { scoreForChallenge } from "../domain/game/engine/scoring";
 import type {
   ActiveTracked,
@@ -51,6 +51,7 @@ type GameState = {
 type AdvancedSettings = {
   enabledCategories: Record<string, boolean>;
   favoriteChallenges: Record<string, boolean>;
+  disabledChallenges: Record<string, boolean>; // true = disabled
 };
 
 type Action =
@@ -62,6 +63,7 @@ type Action =
   | { type: "TOGGLE_CATEGORY"; category: string }
   | { type: "TOGGLE_FAVORITE"; challengeId: string }
   | { type: "SET_TOTAL_ROUNDS"; totalRounds: number }
+  | { type: "TOGGLE_CHALLENGE_ENABLED"; challengeId: string }
   | { type: "RESET_GAME" };
 
 function makeId() {
@@ -189,7 +191,13 @@ function reducer(state: GameState, action: Action): GameState {
       const player = state.players[state.currentPlayerIndex];
       if (!player) return state;
 
-      const picked = randomPick(CHALLENGES) as Challenge;
+      const picked = pickChallengeWeighted({
+        challenges: CHALLENGES,
+        favorites: state.advanced?.favoriteChallenges,
+        enabledCategories: state.advanced?.enabledCategories,
+        disabledChallenges: state.advanced?.disabledChallenges,
+        favoriteBoost: 2,
+      }) as Challenge;
 
       // advance counters for THIS turn
       const nextTurnInRound = state.turnInRound + 1;
@@ -276,6 +284,23 @@ function reducer(state: GameState, action: Action): GameState {
       };
     }
 
+    case "TOGGLE_CHALLENGE_ENABLED": {
+      const currentlyDisabled =
+        state.advanced.disabledChallenges[action.challengeId] === true;
+
+      return {
+        ...state,
+        advanced: {
+          ...state.advanced,
+          disabledChallenges: {
+            ...state.advanced.disabledChallenges,
+            // flip disabled flag
+            [action.challengeId]: !currentlyDisabled,
+          },
+        },
+      };
+    }
+
     case "SKIP_TURN": {
       if (isGameOver(state)) return state;
 
@@ -299,7 +324,13 @@ function reducer(state: GameState, action: Action): GameState {
         : state.activeTracked;
 
       // Reroll challenge for next player, award 0 points
-      const picked = randomPick(CHALLENGES) as Challenge;
+      const picked = pickChallengeWeighted({
+        challenges: CHALLENGES,
+        favorites: state.advanced?.favoriteChallenges,
+        enabledCategories: state.advanced?.enabledCategories,
+        disabledChallenges: state.advanced?.disabledChallenges,
+        favoriteBoost: 2,
+      }) as Challenge;
 
       let challengeText = "";
       let n: number | null = null;
@@ -385,6 +416,7 @@ const GameContext = createContext<{
   toggleCategory: (category: string) => void;
   toggleFavorite: (challengeId: string) => void;
   setTotalRounds: (rounds: number) => void;
+  toggleChallengeEnabled: (challengeId: string) => void;
   resetGame: () => void;
 } | null>(null);
 
@@ -402,6 +434,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     advanced: {
       enabledCategories: {},
       favoriteChallenges: {},
+      disabledChallenges: {},
     },
   });
 
@@ -417,6 +450,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         skipTurn: () => dispatch({ type: "SKIP_TURN" }),
         toggleCategory: (category) =>
           dispatch({ type: "TOGGLE_CATEGORY", category }),
+        toggleChallengeEnabled: (challengeId) =>
+          dispatch({ type: "TOGGLE_CHALLENGE_ENABLED", challengeId }),
         toggleFavorite: (challengeId) =>
           dispatch({ type: "TOGGLE_FAVORITE", challengeId }),
         resetGame: () => dispatch({ type: "RESET_GAME" }),

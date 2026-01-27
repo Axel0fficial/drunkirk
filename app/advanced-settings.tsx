@@ -23,7 +23,12 @@ function challengeTitle(ch: any) {
 }
 
 export default function AdvancedSettings() {
-  const { state, toggleCategory, toggleFavorite } = useGame();
+  const { state, toggleCategory, toggleFavorite, toggleChallengeEnabled } =
+    useGame();
+
+  const isDisabled = (challengeId: string) => {
+    return state.advanced.disabledChallenges?.[challengeId] === true;
+  };
 
   const sections: Section[] = useMemo(() => {
     // Map category -> challenges
@@ -130,6 +135,7 @@ export default function AdvancedSettings() {
         }}
         renderItem={({ item, section }) => {
           const enabled = isCategoryEnabled(section.title);
+          const disabled = isDisabled(item.id);
           const fav = isFavorite(item.id);
 
           return (
@@ -145,23 +151,39 @@ export default function AdvancedSettings() {
                 style={{
                   flexDirection: "row",
                   justifyContent: "space-between",
-                  alignItems: "center",
                   gap: 12,
                 }}
               >
-                <Text style={{ flex: 1 }}>{item.title}</Text>
+                <Text style={{ flex: 1, opacity: disabled ? 0.5 : 1 }}>
+                  {item.title}
+                </Text>
 
-                <Pressable
-                  onPress={() => toggleFavorite(item.id)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    borderWidth: 1,
-                    borderRadius: 10,
-                  }}
-                >
-                  <Text>{fav ? "★ Favorite" : "☆ Favorite"}</Text>
-                </Pressable>
+                <View style={{ gap: 8, alignItems: "flex-end" }}>
+                  <Pressable
+                    onPress={() => toggleFavorite(item.id)}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderWidth: 1,
+                      borderRadius: 10,
+                      opacity: disabled ? 0.5 : 1,
+                    }}
+                  >
+                    <Text>{fav ? "★ Favorite" : "☆ Favorite"}</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => toggleChallengeEnabled(item.id)}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderWidth: 1,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text>{disabled ? "Off" : "On"}</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
           );
