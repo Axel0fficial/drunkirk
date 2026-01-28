@@ -199,6 +199,23 @@ export default function Settings() {
       </View>
 
       <Pressable
+        onPress={() => router.push("/custom")}
+        style={{
+          padding: 14,
+          borderWidth: 2,
+          borderRadius: 12,
+          borderColor: BasePalette.primary,
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{ fontSize: 16, color: BasePalette.text, fontWeight: "800" }}
+        >
+          Custom challenges
+        </Text>
+      </Pressable>
+
+      <Pressable
         onPress={() => router.push("/advanced-settings")}
         style={{
           padding: 14,
