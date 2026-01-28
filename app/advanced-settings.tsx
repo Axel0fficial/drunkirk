@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Pressable, SectionList, Text, View } from "react-native";
 import { CHALLENGES } from "../src/domain/game/challenges";
 import { useGame } from "../src/state/gameStore";
+import { BasePalette } from "../src/ui/theme/colors";
 
 type SectionItem = {
   id: string;
@@ -65,24 +66,30 @@ export default function AdvancedSettings() {
   };
 
   return (
-    <View style={{ flex: 1, padding: 24 }}>
+    <View
+      style={{ backgroundColor: BasePalette.background, flex: 1, padding: 24 }}
+    >
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
+          backgroundColor: BasePalette.background,
+          borderColor: BasePalette.primary,
         }}
       >
-        <Text style={{ fontSize: 26, fontWeight: "700" }}>
+        <Text
+          style={{ fontSize: 26, fontWeight: "700", color: BasePalette.text }}
+        >
           Advanced settings
         </Text>
 
         <Pressable onPress={() => router.back()} style={{ padding: 10 }}>
-          <Text>Back</Text>
+          <Text style={{ color: BasePalette.text }}>Back</Text>
         </Pressable>
       </View>
 
-      <Text style={{ marginTop: 8, opacity: 0.8 }}>
+      <Text style={{ color: BasePalette.text, marginTop: 8, opacity: 0.8 }}>
         Disable categories and mark favorite challenges.
       </Text>
 
@@ -106,13 +113,20 @@ export default function AdvancedSettings() {
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
+                borderColor: BasePalette.primary,
               }}
             >
               <View>
-                <Text style={{ fontSize: 18, fontWeight: "600" }}>
+                <Text
+                  style={{
+                    color: BasePalette.text,
+                    fontSize: 18,
+                    fontWeight: "600",
+                  }}
+                >
                   {section.title}
                 </Text>
-                <Text style={{ opacity: 0.7 }}>
+                <Text style={{ color: BasePalette.text, opacity: 0.7 }}>
                   {enabled ? "Enabled" : "Disabled"} • {section.data.length}{" "}
                   challenges
                 </Text>
@@ -126,9 +140,12 @@ export default function AdvancedSettings() {
                   borderWidth: 1,
                   borderRadius: 10,
                   opacity: enabled ? 1 : 0.7,
+                  borderColor: BasePalette.primary,
                 }}
               >
-                <Text>{enabled ? "Disable" : "Enable"}</Text>
+                <Text style={{ color: BasePalette.text }}>
+                  {enabled ? "Disable" : "Enable"}
+                </Text>
               </Pressable>
             </View>
           );
@@ -145,6 +162,7 @@ export default function AdvancedSettings() {
                 borderRadius: 12,
                 padding: 12,
                 opacity: enabled ? 1 : 0.45,
+                borderColor: BasePalette.primary,
               }}
             >
               <View
@@ -152,9 +170,16 @@ export default function AdvancedSettings() {
                   flexDirection: "row",
                   justifyContent: "space-between",
                   gap: 12,
+                  borderColor: BasePalette.primary,
                 }}
               >
-                <Text style={{ flex: 1, opacity: disabled ? 0.5 : 1 }}>
+                <Text
+                  style={{
+                    color: BasePalette.text,
+                    flex: 1,
+                    opacity: disabled ? 0.5 : 1,
+                  }}
+                >
                   {item.title}
                 </Text>
 
@@ -167,9 +192,12 @@ export default function AdvancedSettings() {
                       borderWidth: 1,
                       borderRadius: 10,
                       opacity: disabled ? 0.5 : 1,
+                      borderColor: BasePalette.primary,
                     }}
                   >
-                    <Text>{fav ? "★ Favorite" : "☆ Favorite"}</Text>
+                    <Text style={{ color: BasePalette.text }}>
+                      {fav ? "★ Favorite" : "☆ Favorite"}
+                    </Text>
                   </Pressable>
 
                   <Pressable
@@ -179,9 +207,12 @@ export default function AdvancedSettings() {
                       paddingHorizontal: 12,
                       borderWidth: 1,
                       borderRadius: 10,
+                      borderColor: BasePalette.primary,
                     }}
                   >
-                    <Text>{disabled ? "Off" : "On"}</Text>
+                    <Text style={{ color: BasePalette.text }}>
+                      {disabled ? "Off" : "On"}
+                    </Text>
                   </Pressable>
                 </View>
               </View>

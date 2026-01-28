@@ -6,6 +6,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { useGame } from "../src/state/gameStore";
+import { BasePalette } from "../src/ui/theme/colors";
 
 export default function Settings() {
   const {
@@ -34,11 +35,16 @@ export default function Settings() {
         flex: 1,
         padding: 24,
         paddingBottom: 24 + insets.bottom,
+        backgroundColor: BasePalette.background,
         gap: 16,
       }}
     >
-      <Text style={{ fontSize: 26, fontWeight: "700" }}>Players</Text>
-      <Text style={{ opacity: 0.8 }}>{hint}</Text>
+      <Text
+        style={{ fontSize: 26, color: BasePalette.text, fontWeight: "700" }}
+      >
+        Players
+      </Text>
+      <Text style={{ opacity: 0.8, color: BasePalette.text }}>{hint}</Text>
 
       <View style={{ flexDirection: "row", gap: 12 }}>
         <TextInput
@@ -51,6 +57,8 @@ export default function Settings() {
             borderRadius: 12,
             paddingHorizontal: 12,
             paddingVertical: 10,
+            borderColor: BasePalette.primary,
+            color: BasePalette.text,
           }}
         />
         <Pressable
@@ -63,14 +71,15 @@ export default function Settings() {
             justifyContent: "center",
             borderWidth: 1,
             borderRadius: 12,
+            borderColor: BasePalette.primary,
           }}
         >
-          <Text>Add</Text>
+          <Text style={{ color: BasePalette.text }}>Add</Text>
         </Pressable>
       </View>
 
       <FlatList
-        style={{ flex: 1 }}
+        style={{ flex: 1, borderColor: BasePalette.primary }}
         contentContainerStyle={{ paddingBottom: 12 }}
         data={state.players}
         keyExtractor={(p) => p.id}
@@ -84,23 +93,37 @@ export default function Settings() {
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
+              borderColor: BasePalette.primary,
             }}
           >
-            <Text style={{ fontSize: 18 }}>{item.name}</Text>
+            <Text style={{ fontSize: 18, color: BasePalette.text }}>
+              {item.name}
+            </Text>
             <Pressable
               onPress={() => removePlayer(item.id)}
-              style={{ padding: 8 }}
+              style={{ padding: 8, borderColor: BasePalette.primary }}
             >
-              <Text>Remove</Text>
+              <Text style={{ color: BasePalette.text }}>Remove</Text>
             </Pressable>
           </View>
         )}
       />
 
       <View style={{ gap: 8 }}>
-        <Text style={{ fontSize: 18, fontWeight: "600" }}>Total rounds</Text>
+        <Text
+          style={{ color: BasePalette.text, fontSize: 18, fontWeight: "600" }}
+        >
+          Total rounds
+        </Text>
 
-        <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 12,
+            alignItems: "center",
+            borderColor: BasePalette.primary,
+          }}
+        >
           <TextInput
             value={String(state.totalRounds)}
             onChangeText={(t) => {
@@ -117,6 +140,8 @@ export default function Settings() {
               paddingHorizontal: 12,
               paddingVertical: 10,
               textAlign: "center",
+              borderColor: BasePalette.primary,
+              color: BasePalette.text,
             }}
           />
 
@@ -127,13 +152,14 @@ export default function Settings() {
               paddingHorizontal: 14,
               borderWidth: 1,
               borderRadius: 12,
+              borderColor: BasePalette.primary,
             }}
           >
-            <Text>Default (6)</Text>
+            <Text style={{ color: BasePalette.text }}>Default (6)</Text>
           </Pressable>
         </View>
 
-        <Text style={{ opacity: 0.7 }}>
+        <Text style={{ opacity: 0.7, color: BasePalette.text }}>
           Game ends after {state.totalRounds} rounds.
         </Text>
       </View>
@@ -152,9 +178,10 @@ export default function Settings() {
             borderRadius: 12,
             alignItems: "center",
             opacity: canStart ? 1 : 0.4,
+            borderColor: BasePalette.primary,
           }}
         >
-          <Text style={{ fontSize: 18 }}>Start</Text>
+          <Text style={{ fontSize: 18, color: BasePalette.text }}>Start</Text>
         </Pressable>
 
         <Pressable
@@ -164,9 +191,10 @@ export default function Settings() {
             borderWidth: 1,
             borderRadius: 12,
             alignItems: "center",
+            borderColor: BasePalette.primary,
           }}
         >
-          <Text>Reset</Text>
+          <Text style={{ color: BasePalette.text }}>Reset</Text>
         </Pressable>
       </View>
 
@@ -177,9 +205,12 @@ export default function Settings() {
           borderWidth: 1,
           borderRadius: 12,
           alignItems: "center",
+          borderColor: BasePalette.primary,
         }}
       >
-        <Text style={{ fontSize: 16 }}>Advanced settings</Text>
+        <Text style={{ fontSize: 16, color: BasePalette.text }}>
+          Advanced settings
+        </Text>
       </Pressable>
     </SafeAreaView>
   );
