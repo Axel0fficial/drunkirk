@@ -1,5 +1,18 @@
 export type Difficulty = "easy" | "normal" | "hard" | "brutal";
 
+export type Repeatability = "repeatable" | "annoying" | "unique";
+
+export type CooldownConfig = {
+  // "Immediate repetition": block if used in last N turns (global)
+  globalTurns: number; // e.g. 1 or 2
+
+  // "Same player next turn": block if this player had it in their last N turns
+  perPlayerTurns: number; // e.g. 1
+
+  // Optional: cap how many times it can appear in the whole game
+  maxPerGame?: number; // unique => 1
+};
+
 export type NumberRange = {
   min: number;
   max: number;
@@ -23,7 +36,12 @@ export type SimpleChallenge = {
   text: string;
   difficulty: Difficulty;
   quantity?: NumberRange;
-  categories: ChallengeCategory[];
+  //categories: ChallengeCategory[];
+
+  categories: string[];
+
+  repeatability?: Repeatability;
+  cooldown?: CooldownConfig;
 };
 
 export type TrackedChallenge = {
@@ -32,7 +50,10 @@ export type TrackedChallenge = {
   difficulty: Difficulty;
   action: string;
   rounds: NumberRange;
-  categories: ChallengeCategory[];
+  //categories: ChallengeCategory[];
+  categories: string[];
+  repeatability?: Repeatability;
+  cooldown?: CooldownConfig;
 };
 
 export type Challenge = SimpleChallenge | TrackedChallenge;

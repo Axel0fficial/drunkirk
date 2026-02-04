@@ -8,6 +8,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 1, max: 3 },
     categories: ["sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 }, // default anyway, but explicit is ok
   },
   {
     kind: "simple",
@@ -87,6 +89,8 @@ export const CHALLENGES: Challenge[] = [
     text: "El último en llegar tómese un shot y una tapita para ponerse al día",
     difficulty: "normal",
     categories: ["social"],
+    repeatability: "unique",
+    cooldown: { globalTurns: 999, perPlayerTurns: 999, maxPerGame: 1 },
   },
 
   // ======================
@@ -456,5 +460,7 @@ export const CHALLENGES: Challenge[] = [
     text: "Hora de rezar! Ponte en tus rodillas, abre tu boca y un jugador deberá darte un shot desde 25cm de distancia",
     difficulty: "brutal",
     categories: ["social", "wildcard"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
 ];

@@ -171,6 +171,66 @@ function weightedPick<T>(items: T[], weights: number[]): T {
   return items[items.length - 1];
 }
 
+type Repeatability = "repeatable" | "annoying" | "unique";
+
+type CooldownConfig = {
+  globalTurns: number;
+  perPlayerTurns: number;
+  maxPerGame?: number;
+};
+
+function defaultsForRepeatability(r: Repeatability): CooldownConfig {
+  switch (r) {
+    case "repeatable":
+      return { globalTurns: 1, perPlayerTurns: 1 };
+    case "annoying":
+      return { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 };
+    case "unique":
+      // "Unique": basically never repeat
+      return { globalTurns: 4, perPlayerTurns: 999, maxPerGame: 1 };
+  }
+}
+
+function resolveCooldown(c: any): CooldownConfig {
+  const rep: Repeatability = c.repeatability ?? "repeatable";
+  const base = defaultsForRepeatability(rep);
+  return {
+    ...base,
+    ...(c.cooldown ?? {}),
+  };
+}
+
+function countInHistory(
+  history: { challengeId: string }[],
+  challengeId: string,
+) {
+  let n = 0;
+  for (const h of history) if (h.challengeId === challengeId) n++;
+  return n;
+}
+
+function seenInLastGlobalTurns(
+  history: { challengeId: string }[],
+  challengeId: string,
+  globalTurns: number,
+) {
+  if (globalTurns <= 0) return false;
+  const window = history.slice(-globalTurns);
+  return window.some((h) => h.challengeId === challengeId);
+}
+
+function seenInLastPlayerTurns(
+  history: { challengeId: string; playerId: string }[],
+  playerId: string,
+  challengeId: string,
+  perPlayerTurns: number,
+) {
+  if (perPlayerTurns <= 0) return false;
+  const playerHistory = history.filter((h) => h.playerId === playerId);
+  const window = playerHistory.slice(-perPlayerTurns);
+  return window.some((h) => h.challengeId === challengeId);
+}
+
 // --- Category enabled default = true
 function isCategoryEnabled(map: Record<string, boolean>, cat: string) {
   return map[cat] !== false;
@@ -221,44 +281,98 @@ function isGameOver(state: GameState) {
 }
 
 // --- Pick challenge from merged pool with filters + weights
-function pickChallengeFromPool(state: GameState): Challenge {
+function pickChallengeFromPool(
+  state: GameState,
+  forPlayerId: string,
+): Challenge {
   const poolAll = [
     ...(CHALLENGES as Challenge[]),
     ...(state.customChallenges as unknown as Challenge[]),
   ];
 
-  // 1) Remove disabled challenges
+  // Always apply these (hard filters)
   const enabledOnly = poolAll.filter(
     (c: any) => state.advanced.disabledChallenges?.[c.id] !== true,
   );
 
-  // 2) Category filtering (if challenge has categories)
   const categoryFiltered = enabledOnly.filter((c: any) => {
     const cats: string[] = c.categories ?? [];
     if (cats.length === 0) return true;
-    return cats.some((cat) =>
-      isCategoryEnabled(state.advanced.enabledCategories ?? {}, cat),
+    return cats.some(
+      (cat) => state.advanced.enabledCategories?.[cat] !== false,
     );
   });
 
-  // Fallbacks to avoid empty pool
-  const finalPool =
+  const basePool =
     categoryFiltered.length > 0
       ? categoryFiltered
       : enabledOnly.length > 0
         ? enabledOnly
         : poolAll;
 
-  // 3) Weighting: difficulty + favorites boost
-  const weights = finalPool.map((c: any) => {
+  // Build filtered pool with cooldown rules
+  const applyRules = (
+    pool: Challenge[],
+    mode: "strict" | "relaxGlobal" | "relaxGlobalAndPlayer",
+  ): Challenge[] => {
+    return pool.filter((c: any) => {
+      const cd = resolveCooldown(c);
+
+      // Max per game (unique / annoying)
+      if (cd.maxPerGame != null) {
+        const used = countInHistory(state.history, c.id);
+        if (used >= cd.maxPerGame) return false;
+      }
+
+      // Immediate repetition (global)
+      if (mode === "strict") {
+        if (seenInLastGlobalTurns(state.history, c.id, cd.globalTurns))
+          return false;
+      } else if (mode === "relaxGlobalAndPlayer") {
+        // ignore global check
+      } else if (mode === "relaxGlobal") {
+        // ignore global check
+      }
+
+      // Same player repetition
+      if (mode === "strict" || mode === "relaxGlobal") {
+        if (
+          seenInLastPlayerTurns(
+            state.history,
+            forPlayerId,
+            c.id,
+            cd.perPlayerTurns,
+          )
+        )
+          return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Try strict first
+  let pool = applyRules(basePool, "strict");
+
+  // If too strict, relax global immediate-cooldown (still keep per-player)
+  if (pool.length === 0) pool = applyRules(basePool, "relaxGlobal");
+
+  // If still empty, relax both global + per-player cooldown (keep maxPerGame if possible)
+  if (pool.length === 0) pool = applyRules(basePool, "relaxGlobalAndPlayer");
+
+  // Last resort: if even maxPerGame blocks everything, ignore maxPerGame too
+  if (pool.length === 0) pool = basePool;
+
+  // Weighted probability (difficulty + favorites boost stays)
+  const weights = pool.map((c: any) => {
     const base = difficultyBaseWeight(c.difficulty);
     const fav = state.advanced.favoriteChallenges?.[c.id] === true;
-    const favBoost = fav ? 2 : 1; // tweak favorite boost here
+    const favBoost = fav ? 2 : 1;
     const custom = typeof c.weight === "number" ? c.weight : 1;
     return base * favBoost * custom;
   });
 
-  return weightedPick(finalPool, weights);
+  return weightedPick(pool, weights);
 }
 
 // ======================
@@ -483,7 +597,7 @@ function reducer(state: GameState, action: Action): GameState {
       const player = state.players[state.currentPlayerIndex];
       if (!player) return state;
 
-      const picked = pickChallengeFromPool(state);
+      const picked = pickChallengeFromPool(state, player.id);
 
       // Advance counters for THIS turn
       const nextTurnInRound = state.turnInRound + 1;
@@ -584,7 +698,7 @@ function reducer(state: GameState, action: Action): GameState {
         : state.activeTracked;
 
       // Reroll a challenge for the next player, award 0 points
-      const picked = pickChallengeFromPool(state);
+      const picked = pickChallengeFromPool(state, nextPlayer.id);
 
       let challengeText = "";
       let n: number | null = null;
