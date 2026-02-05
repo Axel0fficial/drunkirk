@@ -1,5 +1,7 @@
 import { Challenge } from "./models";
 
+// export type Repeatability = "repeatable" | "annoying" | "unique";
+
 export const CHALLENGES: Challenge[] = [
   {
     kind: "simple",
@@ -18,6 +20,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 1, max: 3 },
     categories: ["sips", "social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -26,6 +30,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "normal",
     quantity: { min: 1, max: 2 },
     categories: ["sips", "social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -34,6 +40,8 @@ export const CHALLENGES: Challenge[] = [
     action: "drink 1 sip at the start of your turn",
     rounds: { min: 2, max: 4 },
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -41,6 +49,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Toma una cuchara de ají",
     difficulty: "brutal",
     categories: ["sips"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -49,6 +59,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "brutal",
     quantity: { min: 2, max: 2 },
     categories: ["sips"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -56,6 +68,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Al seco, mi Rey/Reina",
     difficulty: "brutal",
     categories: ["sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -63,6 +77,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Bartender! El de la derecha te prepara un shot con 3 ingredientes y debes tomarlo",
     difficulty: "brutal",
     categories: ["social", "sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -70,6 +86,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Misterio? Toma un shot de un trago misterioso preparado por el resto",
     difficulty: "brutal",
     categories: ["sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -78,6 +96,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "brutal",
     quantity: { min: 2, max: 2 },
     categories: ["social", "sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
 
   // ======================
@@ -103,6 +123,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 3, max: 3 },
     categories: ["sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -111,6 +133,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 2, max: 2 },
     categories: ["sips"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -119,6 +143,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 3, max: 3 },
     categories: ["sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -127,6 +153,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 4, max: 4 },
     categories: ["social"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -135,6 +163,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 3, max: 3 },
     categories: ["social"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -142,6 +172,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Chúpate el dedo con extremo erotismo",
     difficulty: "hard",
     categories: ["wildcard"],
+    repeatability: "unique",
+    cooldown: { globalTurns: 999, perPlayerTurns: 999, maxPerGame: 1 },
   },
 
   // ======================
@@ -153,6 +185,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Vendedor! Vende un producto al grupo (lo que sea)",
     difficulty: "easy",
     categories: ["social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -160,6 +194,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Defiende tus creencias y da un discurso sobre por qué los hombres deben usar minifalda",
     difficulty: "easy",
     categories: ["social"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -167,6 +203,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Bebe un vaso de agua salada",
     difficulty: "easy",
     categories: ["sips"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -174,6 +212,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Arrodíllate y pídele románticamente matrimonio al 2ndo más viejo",
     difficulty: "easy",
     categories: ["social"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -182,6 +222,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 5, max: 5 },
     categories: ["social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -189,6 +231,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Salud! Haz un brindis, todos toman",
     difficulty: "easy",
     categories: ["social", "sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -196,6 +240,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Demuestra un talento o toma {n}, si no tienes toma {m}",
     difficulty: "easy",
     categories: ["social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -204,6 +250,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 1, max: 1 },
     categories: ["sips"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -211,6 +259,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Di algo bueno del jugador de tu izquierda",
     difficulty: "easy",
     categories: ["social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -218,6 +268,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Haz un brindis por alguien en la mesa",
     difficulty: "easy",
     categories: ["social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -226,6 +278,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 4, max: 4 },
     categories: ["social"],
+    repeatability: "unique",
+    cooldown: { globalTurns: 999, perPlayerTurns: 999, maxPerGame: 1 },
   },
   {
     kind: "simple",
@@ -234,6 +288,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 2, max: 2 },
     categories: ["social"],
+    repeatability: "unique",
+    cooldown: { globalTurns: 999, perPlayerTurns: 999, maxPerGame: 1 },
   },
 
   // ======================
@@ -246,6 +302,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "normal",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -254,6 +312,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "normal",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -262,6 +322,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "normal",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -270,6 +332,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "normal",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -278,6 +342,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "hard",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -286,6 +352,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "normal",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -294,6 +362,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 4, max: 4 },
     categories: ["social", "wildcard"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -302,6 +372,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 2, max: 2 },
     categories: ["social", "wildcard"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "simple",
@@ -309,6 +381,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Salta a una piscina o toma un shot",
     difficulty: "hard",
     categories: ["wildcard"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -316,6 +390,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Carta Alta",
     difficulty: "normal",
     categories: ["minigame"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -323,6 +399,8 @@ export const CHALLENGES: Challenge[] = [
     text: "Copa del Rey: el que la llene, se la toma",
     difficulty: "normal",
     categories: ["social", "rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
 
   // ======================
@@ -335,6 +413,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "normal",
     categories: ["rule", "social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -343,6 +423,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "normal",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -351,6 +433,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 4 },
     difficulty: "hard",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -359,6 +443,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 1, max: 1 },
     difficulty: "hard",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
 
   // ======================
@@ -371,6 +457,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 1, max: 1 },
     difficulty: "hard",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -379,6 +467,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 1, max: 1 },
     difficulty: "hard",
     categories: ["rule", "social"],
+    repeatability: "annoying",
+    cooldown: { globalTurns: 2, perPlayerTurns: 2, maxPerGame: 3 },
   },
   {
     kind: "tracked",
@@ -387,6 +477,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 2, max: 2 },
     difficulty: "normal",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "tracked",
@@ -395,6 +487,8 @@ export const CHALLENGES: Challenge[] = [
     rounds: { min: 1, max: 1 },
     difficulty: "easy",
     categories: ["rule"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -403,6 +497,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "normal",
     quantity: { min: 2, max: 4 },
     categories: ["social", "minigame"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -411,6 +507,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "normal",
     quantity: { min: 2, max: 4 },
     categories: ["minigame", "social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -419,6 +517,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "hard",
     quantity: { min: 2, max: 5 },
     categories: ["minigame", "sips", "social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
 
   // Ritual / category prompt (simple)
@@ -429,6 +529,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 2, max: 3 },
     categories: ["social", "wildcard"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -436,6 +538,8 @@ export const CHALLENGES: Challenge[] = [
     text: "dejar tu teléfono en la mesa y no tocarlo",
     difficulty: "normal",
     categories: ["minigame"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
   {
     kind: "simple",
@@ -444,6 +548,8 @@ export const CHALLENGES: Challenge[] = [
     difficulty: "easy",
     quantity: { min: 3, max: 4 },
     categories: ["social"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
 
   {
@@ -452,6 +558,8 @@ export const CHALLENGES: Challenge[] = [
     text: "El de la derecha puede darte el reto que quiera. Si no aceptas, el resto elige el castigo",
     difficulty: "brutal",
     categories: ["social", "wildcard"],
+    repeatability: "repeatable",
+    cooldown: { globalTurns: 1, perPlayerTurns: 1 },
   },
 
   {
