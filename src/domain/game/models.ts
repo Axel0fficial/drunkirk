@@ -38,6 +38,8 @@ export type SimpleChallenge = {
   quantity?: NumberRange;
   //categories: ChallengeCategory[];
 
+  params?: Record<string, NumberRange>;
+
   categories: string[];
 
   repeatability?: Repeatability;

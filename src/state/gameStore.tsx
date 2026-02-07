@@ -89,7 +89,7 @@ type TurnEntry = {
   difficulty: Difficulty;
   categories: string[];
 
-  n: number | null;
+  values?: Record<string, number>;
   pointsAwarded: number;
 
   timestamp: number;
@@ -256,10 +256,33 @@ function scoreFor(difficulty: Difficulty, n: number | null): number {
 }
 
 // --- Format simple challenge with {n}
-function formatSimple(ch: SimpleChallenge): { text: string; n: number | null } {
-  if (!ch.quantity) return { text: ch.text, n: null };
-  const n = randomInt(ch.quantity.min, ch.quantity.max);
-  return { text: ch.text.replace("{n}", String(n)), n };
+function formatSimple(ch: SimpleChallenge): {
+  text: string;
+  values: Record<string, number>;
+} {
+  const values: Record<string, number> = {};
+
+  // Backward compatibility: quantity -> {n}
+  if (ch.quantity && !ch.params) {
+    const n = randomInt(ch.quantity.min, ch.quantity.max);
+    values["n"] = n;
+    return { text: ch.text.replaceAll("{n}", String(n)), values };
+  }
+
+  // New multi-param system
+  const params = ch.params ?? {};
+  let out = ch.text;
+
+  for (const key of Object.keys(params)) {
+    const r = params[key];
+    const v = randomInt(r.min, r.max);
+    values[key] = v;
+
+    // replace ALL occurrences of {key}
+    out = out.replaceAll(`{${key}}`, String(v));
+  }
+
+  return { text: out, values };
 }
 
 // --- Format tracked text
@@ -589,7 +612,9 @@ function reducer(state: GameState, action: Action): GameState {
         activeTracked: [],
       };
     }
-
+    // ======================
+    // NEXT_TURN
+    // ======================
     case "NEXT_TURN": {
       if (state.players.length < 2) return state;
       if (isGameOver(state)) return state;
@@ -610,17 +635,19 @@ function reducer(state: GameState, action: Action): GameState {
         : state.activeTracked;
 
       let challengeText = "";
-      let n: number | null = null;
       let points = 0;
-
+      let values: Record<string, number> = {};
       let activeTrackedAfterApply = trackedAfterRound;
 
       if ((picked as any).kind === "tracked") {
         const tr = picked as TrackedChallenge;
         const rounds = randomInt(tr.rounds.min, tr.rounds.max);
 
-        const target = player; // v1: tracked applies to current player
+        // v1: tracked applies to current player
+        const target = player;
+
         challengeText = formatTrackedText(target.name, tr.action, rounds);
+        values = { rounds };
 
         const active: ActiveTracked = {
           id: makeId(),
@@ -634,14 +661,20 @@ function reducer(state: GameState, action: Action): GameState {
 
         activeTrackedAfterApply = [...trackedAfterRound, active];
 
-        // scoring for tracked: rounds count used as n
+        // scoring for tracked: use rounds as the number
         points = scoreFor(tr.difficulty, rounds);
       } else {
         const s = picked as SimpleChallenge;
-        const formatted = formatSimple(s);
+
+        const formatted = formatSimple(s); // returns { text, values }
         challengeText = formatted.text;
-        n = formatted.n;
-        points = scoreFor(s.difficulty, formatted.n);
+        values = formatted.values;
+
+        // scoring for multi-params: use the max value (works for {n}/{m})
+        const nums = Object.values(values);
+        const primaryNumber = nums.length ? Math.max(...nums) : null;
+
+        points = scoreFor(s.difficulty, primaryNumber);
       }
 
       const nextScores = { ...state.scores };
@@ -656,7 +689,7 @@ function reducer(state: GameState, action: Action): GameState {
         challengeText,
         difficulty: (picked as any).difficulty,
         categories: ((picked as any).categories ?? []) as string[],
-        n,
+        values,
         pointsAwarded: points,
         timestamp: Date.now(),
       };
@@ -677,6 +710,9 @@ function reducer(state: GameState, action: Action): GameState {
       };
     }
 
+    // ======================
+    // SKIP_TURN
+    // ======================
     case "SKIP_TURN": {
       if (state.players.length < 2) return state;
       if (isGameOver(state)) return state;
@@ -701,7 +737,7 @@ function reducer(state: GameState, action: Action): GameState {
       const picked = pickChallengeFromPool(state, nextPlayer.id);
 
       let challengeText = "";
-      let n: number | null = null;
+      let values: Record<string, number> = {};
       let activeTrackedAfterApply = trackedAfterRound;
 
       if ((picked as any).kind === "tracked") {
@@ -710,6 +746,7 @@ function reducer(state: GameState, action: Action): GameState {
 
         const target = nextPlayer;
         challengeText = formatTrackedText(target.name, tr.action, rounds);
+        values = { rounds };
 
         const active: ActiveTracked = {
           id: makeId(),
@@ -724,9 +761,10 @@ function reducer(state: GameState, action: Action): GameState {
         activeTrackedAfterApply = [...trackedAfterRound, active];
       } else {
         const s = picked as SimpleChallenge;
-        const formatted = formatSimple(s);
+
+        const formatted = formatSimple(s); // returns { text, values }
         challengeText = formatted.text;
-        n = formatted.n;
+        values = formatted.values;
       }
 
       const entry: TurnEntry = {
@@ -738,7 +776,7 @@ function reducer(state: GameState, action: Action): GameState {
         challengeText,
         difficulty: (picked as any).difficulty,
         categories: ((picked as any).categories ?? []) as string[],
-        n,
+        values,
         pointsAwarded: 0,
         timestamp: Date.now(),
         isSkip: true,
